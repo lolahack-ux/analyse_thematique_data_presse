@@ -47,11 +47,79 @@ D'autres dimensions pourraient être étudiées dans une version plus avancée d
 
 Ces éléments sont considérés comme des perspectives d'amélioration et ne font pas partie du périmètre principal du prototype actuel.
 
+## 4. Accès aux données
+
+Les fichiers de données brutes et la base SQLite ne sont pas versionnés sur GitHub afin d’éviter d’alourdir le dépôt.
+
+Le projet utilise le dataset :
+
+`rjac/all-the-news-2-1-Component-one`
+
+disponible sur Hugging Face.
+
+Le script :
+
+`back/data/recup_csv.py`
+
+permet de récupérer les articles directement depuis Hugging Face en mode streaming.
+
+Le script filtre les données afin de ne conserver que les articles correspondant à l’année 2016, puis les enregistre dans une base SQLite locale :
+
+`back/data/news.db`
+
+### Installation des dépendances
+
+Avant de lancer l’import, installer les dépendances nécessaires :
+
+```bash
+pip install datasets
+```
+
+### Récupération des données
+
+Depuis la racine du projet :
+
+```bash
+python back/data/recup_csv.py
+```
+
+Le téléchargement se fait en streaming, ce qui évite de récupérer l’ensemble du dataset en une seule fois.
+
+Le script utilise également une table de suivi permettant de reprendre l’import en cas d’interruption.
+
+### Fichiers non versionnés
+
+Les fichiers suivants ne sont pas inclus dans le dépôt GitHub :
+
+```text
+back/data/news.db
+*.csv
+*.parquet
+```
+
+Ils doivent être reconstruits ou téléchargés localement avant d’exécuter l’ensemble du pipeline.
+
+### Reconstruction du pipeline
+
+Une fois les données récupérées, exécuter les scripts dans l’ordre suivant :
+
+```bash
+python back/data/recup_csv.py
+python back/data/nettoyage_donnees.py
+python back/data/analyse_thematique.py
+python back/ml/entrainement_ml.py
+```
+
+L’interface Streamlit peut ensuite être lancée avec :
+
+```bash
+python -m streamlit run front/app_streamlit.py
+```
 ---
 
 # Méthodologie
 
-## 4. Constitution du corpus
+## 5. Constitution du corpus
 
 Le projet utilise le dataset **All the News 2.0**, récupéré depuis Hugging Face.
 
@@ -71,7 +139,7 @@ En cas d'interruption, l'import peut ainsi reprendre à partir du dernier index 
 
 ---
 
-## 5. Contrôle de la qualité des données
+## 6. Contrôle de la qualité des données
 
 Une première analyse est réalisée afin de vérifier la qualité des principales colonnes du dataset.
 
@@ -90,7 +158,7 @@ La colonne `author` contient également plusieurs valeurs manquantes, mais elle 
 
 ---
 
-## 6. Identification des articles exploitables
+## 7. Identification des articles exploitables
 
 Une colonne supplémentaire appelée :
 
@@ -118,7 +186,7 @@ Les lignes non exploitables sont conservées afin de ne pas supprimer les donné
 
 ---
 
-## 7. Normalisation des textes
+## 8. Normalisation des textes
 
 Pour préparer les articles à l'analyse textuelle, une colonne :
 
@@ -141,7 +209,7 @@ Les **33 158 articles exploitables** sont ainsi préparés pour les analyses sui
 
 ---
 
-## 8. Première exploration lexicale
+## 9. Première exploration lexicale
 
 Une première analyse consiste à compter les mots les plus fréquents du corpus.
 
@@ -164,7 +232,7 @@ Après filtrage, des termes plus intéressants apparaissent, notamment :
 
 ---
 
-## 9. Analyse par bigrammes
+## 10. Analyse par bigrammes
 
 L'analyse par mots isolés reste limitée pour identifier précisément certains sujets.
 
@@ -185,7 +253,7 @@ Ces expressions sont généralement plus faciles à interpréter que des mots pr
 
 ---
 
-## 10. Filtrage du bruit technique
+## 11. Filtrage du bruit technique
 
 L'analyse du corpus fait également apparaître certains termes provenant du scraping des pages web.
 
@@ -202,7 +270,7 @@ Ce filtrage améliore la qualité des expressions utilisées pour construire les
 
 ---
 
-## 11. Construction de thèmes expérimentaux
+## 12. Construction de thèmes expérimentaux
 
 La colonne `section` du dataset étant trop incomplète, elle n'est pas utilisée comme classification thématique principale.
 
@@ -242,7 +310,7 @@ Elle sert uniquement à construire des indicateurs exploitables dans le cadre de
 
 # Analyse temporelle
 
-## 12. Analyse hebdomadaire
+## 13. Analyse hebdomadaire
 
 Pour chaque article, le script recherche la présence des bigrammes associés aux différents thèmes.
 
@@ -264,7 +332,7 @@ La dernière semaine étant incomplète, elle est exclue de la modélisation.
 
 ---
 
-## 13. Moyenne mobile sur quatre semaines
+## 14. Moyenne mobile sur quatre semaines
 
 Pour chaque thème, la proportion de la semaine actuelle est comparée à la moyenne des quatre semaines précédentes.
 
@@ -286,7 +354,7 @@ L'intérêt de cette approche est de mesurer une évolution relativement au cont
 
 # Préparation du machine learning
 
-## 14. Construction des variables
+## 15. Construction des variables
 
 Les résultats hebdomadaires sont enregistrés dans une table SQLite :
 
@@ -309,7 +377,7 @@ Après suppression des premières semaines nécessaires au calcul de la moyenne 
 
 ---
 
-## 15. Standardisation des variables
+## 16. Standardisation des variables
 
 Les variables sont standardisées avec :
 
@@ -323,7 +391,7 @@ Les valeurs standardisées sont également utilisées pour identifier les variab
 
 # Détection d'anomalies
 
-## 16. Choix d'Isolation Forest
+## 17. Choix d'Isolation Forest
 
 Le modèle utilisé est :
 
@@ -358,7 +426,7 @@ Il s'agit de détecter des **ruptures thématiques atypiques** pouvant être ét
 
 ---
 
-## 17. Paramétrage principal
+## 18. Paramétrage principal
 
 Le modèle principal utilise :
 
@@ -380,7 +448,7 @@ Il s'agit d'un paramètre expérimental dont la sensibilité est étudiée par l
 
 ---
 
-## 18. Résultats avec une contamination de 10 %
+## 19. Résultats avec une contamination de 10 %
 
 Les quatre semaines détectées sont :
 
@@ -400,7 +468,7 @@ Plus le score retourné par `decision_function` est faible, plus l'observation s
 
 ---
 
-## 19. Interprétation des anomalies
+## 20. Interprétation des anomalies
 
 Afin de comprendre pourquoi les différentes semaines ressortent, les variables standardisées sont analysées.
 
@@ -455,7 +523,7 @@ Une combinaison inhabituelle de diminutions et d'augmentations peut également m
 
 # Comparaison avec une baseline
 
-## 20. Baseline naïve
+## 21. Baseline naïve
 
 Afin de disposer d'un point de comparaison simple, une baseline statistique est utilisée.
 
@@ -477,7 +545,7 @@ Elle est cependant très sensible aux valeurs extrêmes individuelles.
 
 ---
 
-## 21. Comparaison avec Isolation Forest
+## 22. Comparaison avec Isolation Forest
 
 Les deux méthodes n'ont pas le même fonctionnement.
 
@@ -503,7 +571,7 @@ En l'absence de vérité terrain, il n'est pas possible de calculer une métriqu
 
 # Analyse de robustesse
 
-## 22. Influence du taux de contamination
+## 23. Influence du taux de contamination
 
 Le paramètre `contamination` influence directement le nombre d'observations considérées comme atypiques.
 
@@ -543,7 +611,7 @@ Elle permet uniquement de vérifier dans quelle mesure les résultats dépendent
 
 # Interprétation et limites
 
-## 23. Ce que le modèle permet de faire
+## 24. Ce que le modèle permet de faire
 
 Le prototype permet :
 
@@ -555,7 +623,7 @@ Le prototype permet :
 
 ---
 
-## 24. Ce que le modèle ne permet pas d'affirmer
+## 25. Ce que le modèle ne permet pas d'affirmer
 
 Une semaine détectée comme atypique ne constitue pas automatiquement un signal faible.
 
@@ -580,7 +648,7 @@ La validation nécessite donc une interprétation humaine et idéalement une con
 
 ---
 
-## 25. Lien avec la notion de signal faible
+## 26. Lien avec la notion de signal faible
 
 La détection automatique de véritables signaux faibles est un objectif beaucoup plus complexe que la simple détection d'anomalies.
 
